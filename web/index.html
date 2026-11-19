@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Explora precios, ubicación y características de las viviendas vendidas en King County en 2014 y 2015.">
+  <title>Mercado inmobiliario · King County</title>
+  <link rel="stylesheet" href="assets/leaflet/leaflet.css">
+  <link rel="stylesheet" href="estilos.css">
+  <script src="assets/leaflet/leaflet.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#contenido">Saltar al contenido</a>
+  <div class="layout">
+    <aside class="sidebar">
+      <a class="brand" href="#contenido"><span class="brand-icon" aria-hidden="true">KC</span><span>King County<small>Mercado inmobiliario</small></span></a>
+      <nav aria-label="Secciones del tablero">
+        <a href="#resumen" aria-current="location">Resumen</a>
+        <a href="#ubicacion">Ubicación</a>
+        <a href="#caracteristicas">Características</a>
+        <a href="#estadistica">ANOVA y predicción</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <span>Ventas históricas</span>
+        <strong>2014–2015</strong>
+        <a href="https://www.kaggle.com/datasets/harlfoxem/housesalesprediction">Dataset de Kaggle</a>
+      </div>
+    </aside>
+    <main id="contenido">
+      <section id="resumen" aria-labelledby="titulo">
+        <header class="hero">
+          <p class="location">King County, Washington</p>
+          <h1 id="titulo">Mercado inmobiliario</h1>
+          <p>Precios de venta residencial entre mayo de 2014 y mayo de 2015.</p>
+        </header>
+        <form class="filters" aria-label="Filtrar ventas">
+          <label>Código postal<select id="zip"><option value="">Todos</option></select></label>
+          <label>Habitaciones<select id="beds"><option value="">Todas</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option value="6+">6 o más</option></select></label>
+          <label>Frente al agua<select id="water"><option value="">Todas</option><option value="1">Sí</option><option value="0">No</option></select></label>
+          <label>Rango de precio (USD)<select id="price"><option value="">Todos</option></select></label>
+          <button type="reset">Restablecer</button>
+        </form>
+        <p id="result-status" class="status" role="status">Cargando las ventas…</p>
+        <div class="metrics">
+          <article><h2>Ventas registradas</h2><strong id="total">—</strong></article>
+          <article><h2>Precio medio</h2><strong id="mean">—</strong><span>USD por venta</span></article>
+          <article><h2>Precio medio por m²</h2><strong id="unit">—</strong><span>USD por m² habitable</span></article>
+          <article><h2>Frente al agua</h2><strong id="water-count">—</strong><span id="water-share">de las ventas</span></article>
+        </div>
+      </section>
+      <section id="ubicacion" aria-labelledby="ubicacion-title" class="section">
+        <h2 id="ubicacion-title">Ubicación y precios</h2>
+        <div class="grid location-grid">
+          <article class="card">
+            <h3>Mapa de precios medios</h3>
+            <p>Selecciona un punto para ver el precio y el número de ventas de su código postal.</p>
+            <div id="map" aria-label="Mapa interactivo por código postal"></div>
+            <div id="map-legend" class="map-legend" aria-label="Escala de precios del mapa"></div>
+          </article>
+          <article class="card">
+            <h3>Códigos postales más costosos</h3>
+            <p>Hasta diez códigos ordenados por precio medio. Selecciona uno para filtrar el tablero.</p>
+            <ol class="ranking" id="ranking"></ol>
+          </article>
+        </div>
+      </section>
+      <section id="caracteristicas" aria-labelledby="caracteristicas-title" class="section">
+        <h2 id="caracteristicas-title">Características de las viviendas</h2>
+        <div class="grid">
+          <article class="card">
+            <h3>Ventas por rango de precio</h3>
+            <p>Distribución del número de ventas por rango en USD.</p>
+            <div id="bands" class="chart-bars"></div>
+          </article>
+          <article class="card">
+            <h3>Superficie habitable y precio</h3>
+            <p id="correlation">Correlación de Pearson calculada sobre las ventas seleccionadas.</p>
+            <canvas id="scatter" role="img" aria-label="Dispersión de superficie habitable en metros cuadrados y precio de venta en dólares"></canvas>
+          </article>
+          <article class="card">
+            <h3>Precio por año de construcción</h3>
+            <p>Precio medio de reventa, agrupado por el año en que se construyó la vivienda.</p>
+            <canvas id="trend" role="img" aria-label="Precio medio en dólares por año de construcción"></canvas>
+          </article>
+          <article class="card">
+            <h3>Precio y frente al agua</h3>
+            <p>Precio medio y número de ventas para cada grupo.</p>
+            <div id="water-prices" class="chart-bars"></div>
+          </article>
+          <article class="card">
+            <h3>Precio por número de habitaciones</h3>
+            <p>Los grupos de seis o más habitaciones se reúnen en una categoría.</p>
+            <div id="bed-prices" class="chart-bars"></div>
+          </article>
+          <article class="card">
+            <h3>Precio por número de baños</h3>
+            <p>Los baños fraccionarios se agrupan por parte entera. Cinco o más forman un grupo.</p>
+            <div id="bath-prices" class="chart-bars"></div>
+          </article>
+        </div>
+      </section>
+      <section id="estadistica" aria-labelledby="estadistica-title" class="section">
+        <h2 id="estadistica-title">ANOVA y predicción</h2>
+        <p class="section-note">Resultados del análisis completo. Los filtros del tablero se aplican a las visualizaciones anteriores.</p>
+        <div class="grid">
+          <article class="card">
+            <h3>ANOVA por habitaciones</h3>
+            <p>Compara el precio medio en viviendas de tres, cuatro y cinco habitaciones usando una venta por propiedad.</p>
+            <div class="table-wrap" id="anova"></div>
+          </article>
+          <article class="card">
+            <h3>Predicción del precio</h3>
+            <p>Compara el error de los modelos en ventas de propiedades reservadas para evaluación.</p>
+            <div class="table-wrap" id="model"></div>
+          </article>
+        </div>
+      </section>
+      <footer class="footer">
+        <p>Los datos registran código postal y frente al agua. La clasificación de casas y apartamentos requiere otra fuente.</p>
+        <p><a href="https://www.kaggle.com/datasets/harlfoxem/housesalesprediction">House Sales in King County, USA (Kaggle)</a> · CC0</p>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

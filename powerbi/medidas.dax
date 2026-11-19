@@ -1,0 +1,36 @@
+// Power BI Desktop. Crear cada bloque como una medida de la tabla Ventas.
+
+Ventas registradas =
+COUNTROWS ( Ventas )
+
+Propiedades únicas =
+DISTINCTCOUNT ( Ventas[id] )
+
+Precio medio USD =
+AVERAGE ( Ventas[price] )
+
+Precio mediano USD =
+MEDIAN ( Ventas[price] )
+
+Precio medio por m² USD =
+AVERAGE ( Ventas[price_per_m2] )
+
+Ventas frente al agua =
+CALCULATE ( [Ventas registradas], KEEPFILTERS ( Ventas[waterfront] = 1 ) )
+
+Proporción frente al agua =
+DIVIDE ( COALESCE ( [Ventas frente al agua], 0 ), [Ventas registradas] )
+
+Correlación superficie y precio =
+VAR Muestra =
+    FILTER ( Ventas, NOT ISBLANK ( Ventas[living_m2] ) && NOT ISBLANK ( Ventas[price] ) )
+VAR MediaSuperficie = AVERAGEX ( Muestra, Ventas[living_m2] )
+VAR MediaPrecio = AVERAGEX ( Muestra, Ventas[price] )
+VAR SumaProductos =
+    SUMX ( Muestra, ( Ventas[living_m2] - MediaSuperficie ) * ( Ventas[price] - MediaPrecio ) )
+VAR SumaCuadradosSuperficie =
+    SUMX ( Muestra, POWER ( Ventas[living_m2] - MediaSuperficie, 2 ) )
+VAR SumaCuadradosPrecio =
+    SUMX ( Muestra, POWER ( Ventas[price] - MediaPrecio, 2 ) )
+RETURN
+    DIVIDE ( SumaProductos, SQRT ( SumaCuadradosSuperficie * SumaCuadradosPrecio ) )
