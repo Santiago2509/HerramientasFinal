@@ -24,6 +24,7 @@ def main():
     path = ROOT / "artifacts/modelo_precio.joblib"
     if not path.is_file():
         parser.error("Entrena el modelo primero con python scripts/construir.py.")
+    # Usa el modelo generado localmente por scripts/analisis.py.
     model = joblib.load(path)
     known_zips = model.steps[0][1].named_transformers_["zip"].categories_[0]
     if fields["zipcode"] not in known_zips:

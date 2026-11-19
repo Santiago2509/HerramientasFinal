@@ -1,4 +1,4 @@
-"""Descarga el CSV de Kaggle, limpia las ventas y genera las salidas del proyecto."""
+"""Extrae, transforma y carga el CSV de ventas para Power BI y la web."""
 
 import argparse
 import io
@@ -17,14 +17,16 @@ RAW = ROOT / "data/raw/kc_house_data.csv"
 CLEAN = ROOT / "data/processed/ventas.csv"
 DIST = ROOT / "dist"
 SQFT_TO_M2 = 0.09290304
+# Columnas numéricas que conserva el CSV limpio.
 FIELDS = [
     "price", "bedrooms", "bathrooms", "sqft_living", "sqft_lot", "floors",
     "waterfront", "view", "condition", "grade", "sqft_above", "sqft_basement",
     "yr_built", "yr_renovated", "lat", "long", "sqft_living15", "sqft_lot15",
 ]
+# La web reutiliza los campos calculados en el ETL y omite el ID de propiedad.
 WEB_FIELDS = [
-    "price", "living_m2", "bedrooms", "bathrooms", "yr_built", "zipcode",
-    "waterfront", "lat", "long",
+    "price", "living_m2", "price_per_m2", "bedroom_group", "bathroom_group",
+    "yr_built", "zipcode", "waterfront", "lat", "long", "price_band_order",
 ]
 BANDS = [0, 300_000, 500_000, 750_000, 1_000_000, 1_500_000, float("inf")]
 BAND_LABELS = ["< 300 mil", "300 a < 500 mil", "500 a < 750 mil",
@@ -32,6 +34,7 @@ BAND_LABELS = ["< 300 mil", "300 a < 500 mil", "500 a < 750 mil",
 
 
 def download_csv(destination):
+    """Extrae del ZIP el CSV original sin modificarlo."""
     with urlopen(DOWNLOAD, timeout=60) as response:
         content = response.read()
     with ZipFile(io.BytesIO(content)) as archive:
@@ -41,11 +44,13 @@ def download_csv(destination):
 
 
 def transform(path):
+    """Valida cada transacción, genera columnas de análisis y cuenta las incidencias."""
     raw = pd.read_csv(path, dtype={"id": "string", "zipcode": "string", "date": "string"})
     missing = sorted(set(["id", "date", "zipcode", *FIELDS]) - set(raw.columns))
     if missing:
         raise ValueError(f"El CSV no contiene estas columnas: {', '.join(missing)}")
 
+    # Dos ventas de la misma propiedad se conservan si difieren en algún campo.
     sales = raw[["id", "date", "zipcode", *FIELDS]].drop_duplicates().copy()
     exact_duplicates = len(raw) - len(sales)
     sales["sale_date"] = pd.to_datetime(sales.pop("date"), format="%Y%m%dT%H%M%S", errors="coerce")
@@ -70,7 +75,9 @@ def transform(path):
     sales["sale_id"] = range(1, len(sales) + 1)
     sales["living_m2"] = (sales["sqft_living"] * SQFT_TO_M2).round(4)
     sales["price_per_m2"] = (sales["price"] / sales["living_m2"]).round(4)
+    # Marca los 12 registros de esta fuente con el año de construcción posterior a la venta.
     sales["built_after_sale_year"] = sales["yr_built"].gt(sales["sale_date"].dt.year)
+    # El límite inferior de cada rango está incluido. El superior pasa al siguiente rango.
     sales["price_band"] = pd.cut(sales["price"], BANDS, right=False, labels=BAND_LABELS)
     sales["price_band_order"] = sales["price_band"].cat.codes + 1
     sales["waterfront_label"] = sales["waterfront"].map({0: "Sin frente al agua", 1: "Frente al agua"})
@@ -99,13 +106,18 @@ def transform(path):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--source", type=Path, default=RAW, help="Ruta al CSV original de Kaggle")
-    parser.add_argument("--refresh", action="store_true", help="Descarga de nuevo el CSV oficial")
+    source_options = parser.add_mutually_exclusive_group()
+    source_options.add_argument("--source", type=Path, help="Ruta a una copia local del CSV original de Kaggle")
+    source_options.add_argument("--refresh", action="store_true", help="Vuelve a descargar el CSV oficial")
     args = parser.parse_args()
-    if args.refresh or not args.source.exists():
-        download_csv(args.source)
+    source = args.source or RAW
+    if args.source is not None and not source.is_file():
+        parser.error(f"No se encontró el CSV indicado: {source}")
+    if args.refresh or not source.is_file():
+        download_csv(source)
 
-    sales, metadata = transform(args.source)
+    sales, metadata = transform(source)
+    # El mismo conjunto de ventas alimenta el CSV de Power BI y el JSON de la web.
     CLEAN.parent.mkdir(parents=True, exist_ok=True)
     DIST.mkdir(parents=True, exist_ok=True)
     sales.to_csv(CLEAN, index=False, date_format="%Y-%m-%d")

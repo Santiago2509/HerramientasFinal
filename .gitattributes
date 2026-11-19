@@ -1,0 +1,3 @@
+# Conserva el CSV de origen byte por byte y el CSV limpio con saltos LF.
+data/raw/kc_house_data.csv -text
+data/processed/ventas.csv text eol=lf linguist-generated

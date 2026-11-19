@@ -1,4 +1,4 @@
-"""Ejecuta ANOVA y compara dos regresores para el precio de venta."""
+"""Calcula el ANOVA y evalúa dos modelos de precio frente a la mediana."""
 
 import json
 from pathlib import Path
@@ -22,6 +22,8 @@ FEATURES = [*NUMERIC, "zipcode"]
 
 
 def anova(sales):
+    """Compara los precios de viviendas con 3, 4 o 5 habitaciones."""
+    # Usa la primera venta observada de cada propiedad para evitar contar reventas.
     first_sale = sales.sort_values(["sale_date", "sale_id"]).drop_duplicates(subset="id")
     groups = {beds: first_sale.loc[first_sale["bedrooms"].eq(beds), "price"].to_numpy()
               for beds in (3, 4, 5)}
@@ -29,6 +31,7 @@ def anova(sales):
     combined = np.concatenate(samples)
     total_ss = ((combined - combined.mean()) ** 2).sum()
     between_ss = sum(len(s) * (s.mean() - combined.mean()) ** 2 for s in samples)
+    # Welch compara las medias aunque las varianzas de los grupos sean distintas.
     standard = stats.f_oneway(*samples)
     welch = stats.f_oneway(*samples, equal_var=False)
     levene = stats.levene(*samples, center="median")
@@ -46,6 +49,8 @@ def anova(sales):
 
 
 def prediction(sales, model_path):
+    """Entrena en unas propiedades y evalúa el error en propiedades distintas."""
+    # Agrupa por ID para que una reventa nunca cruce entre entrenamiento y prueba.
     train, test = next(GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
                        .split(sales, groups=sales["id"]))
     x_train, x_test = sales.iloc[train][FEATURES], sales.iloc[test][FEATURES]
@@ -58,6 +63,7 @@ def prediction(sales, model_path):
         ("Bosque aleatorio", RandomForestRegressor(n_estimators=150, min_samples_leaf=3,
                                                    random_state=42, n_jobs=-1)),
     ):
+        # Aprende escalas y códigos postales usando solo las filas de entrenamiento.
         encoding = ColumnTransformer([
             ("numeric", StandardScaler(), NUMERIC),
             ("zip", OneHotEncoder(handle_unknown="ignore"), ["zipcode"]),
@@ -72,6 +78,7 @@ def prediction(sales, model_path):
             "r2": float(r2_score(y_test, predictions)),
         })
         fitted[name] = model
+    # Se guarda el modelo con menor error absoluto medio en esta comparación.
     best = min(metrics, key=lambda result: result["mae"])["name"]
     model_path.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(fitted[best], model_path)
@@ -86,6 +93,7 @@ def main():
         "model": prediction(sales, ROOT / "artifacts/modelo_precio.joblib"),
         "pearson": float(sales["living_m2"].corr(sales["price"])),
     }
+    # La web lee este resumen del dataset completo sin entrenar en el navegador.
     destination = ROOT / "dist/analisis.json"
     destination.write_text(json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n",
                            encoding="utf-8")

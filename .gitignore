@@ -1,8 +1,8 @@
+# Entorno local y archivos temporales de Python.
 .venv/
 __pycache__/
 *.pyc
-data/raw/*
-!data/raw/.gitkeep
-data/processed/
+
+# Archivos creados al entrenar el modelo o preparar la web.
 artifacts/
 dist/
