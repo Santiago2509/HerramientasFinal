@@ -11,6 +11,7 @@
   <script src="app.js" defer></script>
 </head>
 <body>
+  <!-- La navegación mueve al usuario entre las secciones del mismo tablero. -->
   <a class="skip" href="#contenido">Saltar al contenido</a>
   <div class="layout">
     <aside class="sidebar">
@@ -28,11 +29,15 @@
       </div>
     </aside>
     <main id="contenido">
+      <!-- app.js lee ventas.json y actualiza estas tarjetas y los gráficos con los filtros. -->
       <section id="resumen" aria-labelledby="titulo">
         <header class="hero">
           <p class="location">King County, Washington</p>
           <h1 id="titulo">Mercado inmobiliario</h1>
-          <p>Precios de venta residencial entre mayo de 2014 y mayo de 2015.</p>
+          <div class="hero-period">
+            <p>Ventas residenciales</p>
+            <p id="periodo">Cargando el período de los datos…</p>
+          </div>
         </header>
         <form class="filters" aria-label="Filtrar ventas">
           <label>Código postal<select id="zip"><option value="">Todos</option></select></label>
@@ -54,13 +59,13 @@
         <div class="grid location-grid">
           <article class="card">
             <h3>Mapa de precios medios</h3>
-            <p>Selecciona un punto para ver el precio y el número de ventas de su código postal.</p>
+            <p>Cada punto representa un código postal. El color indica el precio medio en USD y el tamaño, el número de ventas.</p>
             <div id="map" aria-label="Mapa interactivo por código postal"></div>
             <div id="map-legend" class="map-legend" aria-label="Escala de precios del mapa"></div>
           </article>
           <article class="card">
             <h3>Códigos postales más costosos</h3>
-            <p>Hasta diez códigos ordenados por precio medio. Selecciona uno para filtrar el tablero.</p>
+            <p>Selecciona un código para filtrar. El promedio está en USD.</p>
             <ol class="ranking" id="ranking"></ol>
           </article>
         </div>
@@ -80,7 +85,7 @@
           </article>
           <article class="card">
             <h3>Precio por año de construcción</h3>
-            <p>Precio medio de reventa, agrupado por el año en que se construyó la vivienda.</p>
+            <p>Precio medio de las ventas registradas, agrupado por el año de construcción.</p>
             <canvas id="trend" role="img" aria-label="Precio medio en dólares por año de construcción"></canvas>
           </article>
           <article class="card">
@@ -100,6 +105,7 @@
           </article>
         </div>
       </section>
+      <!-- Estas dos tablas proceden de analisis.json y describen el dataset completo. -->
       <section id="estadistica" aria-labelledby="estadistica-title" class="section">
         <h2 id="estadistica-title">ANOVA y predicción</h2>
         <p class="section-note">Resultados del análisis completo. Los filtros del tablero se aplican a las visualizaciones anteriores.</p>
@@ -117,7 +123,7 @@
         </div>
       </section>
       <footer class="footer">
-        <p>Los datos registran código postal y frente al agua. La clasificación de casas y apartamentos requiere otra fuente.</p>
+        <p>El CSV de Kaggle es la fuente de las ventas y los indicadores. Registra código postal y frente al agua. La clasificación de casas y apartamentos requiere otra fuente.</p>
         <p><a href="https://www.kaggle.com/datasets/harlfoxem/housesalesprediction">House Sales in King County, USA (Kaggle)</a> · CC0</p>
       </footer>
     </main>

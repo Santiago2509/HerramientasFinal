@@ -1,5 +1,7 @@
 "use strict";
 
+// Carga las salidas del ETL y del análisis, y actualiza el tablero sin servidor.
+
 const byId = id => document.getElementById(id);
 const integer = new Intl.NumberFormat("es-CO");
 const dollars = new Intl.NumberFormat("es-CO", {
@@ -9,6 +11,7 @@ const decimal = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 3 });
 const percent = new Intl.NumberFormat("es-CO", { style: "percent", maximumFractionDigits: 2 });
 const compact = new Intl.NumberFormat("es-CO", { notation: "compact", maximumFractionDigits: 1 });
 const scientific = new Intl.NumberFormat("es-CO", { notation: "scientific", maximumFractionDigits: 2 });
+const date = new Intl.DateTimeFormat("es-CO", { dateStyle: "medium", timeZone: "UTC" });
 const avg = (sum, n) => n ? sum / n : null;
 const money = value => value === null ? "—" : dollars.format(value);
 const filters = Object.fromEntries(["zip", "beds", "water", "price"].map(id => [id, byId(id)]));
@@ -36,6 +39,7 @@ function empty(message = "Sin ventas en esta selección.") {
   return element;
 }
 
+// Calcula promedios y coordenadas centrales a partir de las ventas visibles.
 function grouped(rows, key) {
   const groups = new Map();
   for (const row of rows) {
@@ -110,11 +114,13 @@ function updateRanking(groups) {
     button.setAttribute("aria-pressed", String(filters.zip.value === group.name));
     button.setAttribute("aria-label", "Código " + group.name + ", " + money(group.mean)
       + ", " + integer.format(group.count) + " ventas");
-    button.append(span(group.name), track(group.mean, top[0].mean), span(money(group.mean), "number"));
+    const label = span(group.name, "rank-code");
+    label.append(span(integer.format(group.count) + (group.count === 1 ? " venta" : " ventas"), "rank-count"));
+    button.append(label, track(group.mean, top[0].mean), span(money(group.mean), "number"));
     button.addEventListener("click", () => {
       filters.zip.value = filters.zip.value === group.name ? "" : group.name;
       render();
-      list.querySelector('[aria-pressed="true"]')?.focus();
+      (list.querySelector('[aria-pressed="true"]') ?? filters.zip).focus();
     });
     item.append(button);
     return item;
@@ -137,6 +143,7 @@ function initializeMap(boundary) {
   new ResizeObserver(() => map.invalidateSize({ pan: false })).observe(byId("map"));
 }
 
+// Cada punto combina el precio medio (color) y la cantidad de ventas (tamaño).
 function updateMap(groups) {
   markerLayer.clearLayers();
   const legend = byId("map-legend");
@@ -146,9 +153,13 @@ function updateMap(groups) {
   }
   const low = groups.at(-1).mean;
   const high = groups[0].mean;
-  const scale = span("", "map-scale");
-  scale.setAttribute("aria-hidden", "true");
-  legend.replaceChildren(span(money(low)), scale, span(money(high)));
+  if (low === high) {
+    legend.replaceChildren(span("Precio medio " + money(low) + " USD"));
+  } else {
+    const scale = span("", "map-scale");
+    scale.setAttribute("aria-hidden", "true");
+    legend.replaceChildren(span(money(low)), scale, span(money(high)));
+  }
   for (const group of [...groups].reverse()) {
     const scalePosition = high === low ? 0.7 : (group.mean - low) / (high - low);
     const diameter = Math.min(28, 8 + Math.sqrt(group.count) * 0.7);
@@ -158,7 +169,7 @@ function updateMap(groups) {
     const dot = document.createElement("span");
     dot.style.cssText = "display:block;width:100%;height:100%;border-radius:100%;border:2px solid white;"
       + "box-shadow:0 0 0 1px #30574d;background:rgb(" + color.join(",") + ")";
-    const description = "Código postal " + group.name + " · " + money(group.mean);
+    const description = "Código postal " + group.name + " · " + money(group.mean) + " USD";
     const icon = L.divIcon({ html: dot, className: "zip-marker", iconSize: [diameter, diameter] });
     const marker = L.marker([group.lat, group.lon], { icon, title: description });
     const popup = document.createElement("div");
@@ -168,8 +179,10 @@ function updateMap(groups) {
     marker.bindPopup(popup).addTo(markerLayer);
     marker.getElement().setAttribute("aria-label", description);
   }
+  if (filters.zip.value) map.panTo([groups[0].lat, groups[0].lon], { animate: false });
 }
 
+// Usa todas las ventas filtradas aunque el gráfico muestre una muestra.
 function pearson(rows) {
   const n = rows.length;
   if (n < 2) return null;
@@ -206,11 +219,11 @@ function drawCanvas(canvas, series, chart) {
   const plotW = width - padding.left - padding.right;
   const plotH = height - padding.top - padding.bottom;
   const startX = chart === "trend" ? Math.min(...series.map(p => p.x)) : 0;
-  const endX = Math.max(startX + 1, ...series.map(p => p.x));
+  const endX = Math.max(...series.map(p => p.x));
   const maxY = Math.max(...series.map(p => p.y));
   const quantum = 10 ** Math.floor(Math.log10(maxY));
   const endY = Math.ceil(maxY / quantum) * quantum;
-  const xAt = x => padding.left + (x - startX) / (endX - startX) * plotW;
+  const xAt = x => padding.left + (startX === endX ? 0.5 : (x - startX) / (endX - startX)) * plotW;
   const yAt = y => padding.top + (1 - y / endY) * plotH;
   for (let tick = 0; tick <= 4; tick++) {
     const y = endY * tick / 4;
@@ -221,9 +234,13 @@ function drawCanvas(canvas, series, chart) {
     ctx.stroke();
     ctx.textAlign = "right";
     ctx.fillText("$" + compact.format(y), padding.left - 5, yAt(y) + 4);
-    const x = startX + (endX - startX) * tick / 4;
-    ctx.textAlign = "center";
-    ctx.fillText(String(Math.round(x)), xAt(x) - (tick === 4 ? 8 : 0), height - 24);
+  }
+  ctx.textAlign = "center";
+  const labelsX = [...new Set(Array.from({ length: 5 }, (_, i) =>
+    Math.round(startX + (endX - startX) * i / 4)
+  ))];
+  for (const x of labelsX) {
+    ctx.fillText(String(x), Math.min(xAt(x), width - 18), height - 24);
   }
   ctx.fillText(chart === "trend" ? "Año de construcción" : "Superficie habitable (m²)", width / 2 + 15, height - 4);
   if (chart === "trend") {
@@ -255,20 +272,21 @@ function updatePlots() {
   drawCanvas(byId("trend"), buildYears, "trend");
 }
 
+// Las categorías y el precio por m² vienen del ETL, igual que en Power BI.
 function render() {
   filtered = sales.filter(row =>
     (!filters.zip.value || row.zipcode === filters.zip.value)
-    && (!filters.beds.value || (filters.beds.value === "6+" ? row.bedrooms >= 6 : row.bedrooms === Number(filters.beds.value)))
+    && (!filters.beds.value || row.bedroom_group === filters.beds.value)
     && (!filters.water.value || row.waterfront === Number(filters.water.value))
-    && (!filters.price.value || row.band === Number(filters.price.value))
+    && (!filters.price.value || row.price_band_order === Number(filters.price.value))
   );
   let totalPrice = 0, totalUnit = 0, waterfront = 0;
   const bandCounts = Array(metadata.priceBands.length).fill(0);
   for (const row of filtered) {
     totalPrice += row.price;
-    totalUnit += row.price / row.living_m2;
+    totalUnit += row.price_per_m2;
     waterfront += row.waterfront;
-    bandCounts[row.band]++;
+    bandCounts[row.price_band_order - 1]++;
   }
   const n = filtered.length;
   byId("result-status").textContent = integer.format(n) + " de " + integer.format(metadata.sales) + " ventas";
@@ -287,6 +305,7 @@ function render() {
   drawBars(byId("bands"), metadata.priceBands.map((band, index) => ({
     label: band.label, value: bandCounts[index], count: bandCounts[index],
   })), n => integer.format(n));
+
   const r = pearson(filtered);
   byId("correlation").textContent = r === null ? "Se necesitan ventas con valores distintos para calcular Pearson."
     : "Pearson r = " + decimal.format(r) + " · " + integer.format(n) + " ventas"
@@ -295,16 +314,18 @@ function render() {
     .map(group => ({ x: group.name, y: group.mean }));
   updatePlots();
 
-  const withLabels = (groups, labels) => labels.map((label, index) => {
-    const group = groups.find(item => item.name === index);
+  drawPriceGroups("water-prices", "waterfront", [[0, "Sin frente al agua"], [1, "Frente al agua"]]);
+  drawPriceGroups("bed-prices", "bedroom_group", ["0", "1", "2", "3", "4", "5", "6+"].map(label => [label, label]));
+  drawPriceGroups("bath-prices", "bathroom_group", ["0", "1", "2", "3", "4", "5+"].map(label => [label, label]));
+}
+
+function drawPriceGroups(id, field, categories) {
+  const groups = grouped(filtered, row => row[field]);
+  const entries = categories.map(([value, label]) => {
+    const group = groups.find(item => item.name === value);
     return { label, value: group?.mean ?? 0, count: group?.count ?? 0 };
   });
-  drawBars(byId("water-prices"), withLabels(grouped(filtered, row => row.waterfront),
-    ["Sin frente al agua", "Frente al agua"]), money, true);
-  drawBars(byId("bed-prices"), withLabels(grouped(filtered, row => Math.min(6, row.bedrooms)),
-    ["0", "1", "2", "3", "4", "5", "6+"]), money, true);
-  drawBars(byId("bath-prices"), withLabels(grouped(filtered, row => Math.min(5, Math.floor(row.bathrooms))),
-    ["0", "1", "2", "3", "4", "5+"]), money, true);
+  drawBars(byId(id), entries, money, true);
 }
 
 function table(headers, rows) {
@@ -331,6 +352,7 @@ function paragraph(text) {
   return node;
 }
 
+// El ANOVA y las métricas se calculan en Python sobre el dataset completo.
 function showStatistics({ anova, model }) {
   const rejected = anova.welch.p < anova.alpha;
   byId("anova").replaceChildren(
@@ -367,14 +389,11 @@ async function initialize() {
   try {
     const data = await readJson("ventas.json");
     metadata = data.metadata;
-    sales = data.rows.map(row => {
-      const sale = Object.fromEntries(data.fields.map((key, i) => [key, row[i]]));
-      sale.band = metadata.priceBands.findLastIndex(band => sale.price >= band.min);
-      return sale;
-    });
+    sales = data.rows.map(row => Object.fromEntries(data.fields.map((key, i) => [key, row[i]])));
+    byId("periodo").textContent = date.formatRange(new Date(metadata.dateMin), new Date(metadata.dateMax));
     const zipcodes = [...new Set(sales.map(sale => sale.zipcode))].sort();
     zipcodes.forEach(code => addOption(filters.zip, code, code));
-    metadata.priceBands.forEach((band, index) => addOption(filters.price, band.label, index));
+    metadata.priceBands.forEach((band, index) => addOption(filters.price, band.label, index + 1));
     if (window.L) initializeMap(await boundary);
     else byId("map").append(empty("El mapa no se pudo cargar. Los precios están en el listado."));
     const form = document.querySelector(".filters");
