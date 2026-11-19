@@ -2,7 +2,7 @@
 
 ## Extracción y limpieza
 
-El dataset House Sales in King County, USA registra ventas en Washington del 2 de mayo de 2014 al 27 de mayo de 2015. El ETL descarga el CSV oficial de Kaggle y valida su esquema, fechas, importes, superficies, coordenadas y campos de agrupación. Mantiene el ID de propiedad y el código postal como texto.
+El dataset House Sales in King County, USA registra ventas en Washington del 2 de mayo de 2014 al 27 de mayo de 2015. El ETL lee el CSV oficial de Kaggle incluido en el repositorio y valida su esquema, fechas, importes, superficies, coordenadas y campos de agrupación. Mantiene el ID de propiedad y el código postal como texto.
 
 | Control | Resultado |
 | --- | ---: |
@@ -16,7 +16,7 @@ El dataset House Sales in King County, USA registra ventas en Washington del 2 d
 
 Se conservan las ventas repetidas de una misma propiedad como transacciones distintas. Las 12 filas donde la construcción figura en 2015 y la venta en 2014 se conservan y se marcan para revisión. Los valores atípicos de habitaciones, incluido un registro de 33, se conservan en el CSV. Para el gráfico se agrupan las viviendas de seis o más habitaciones.
 
-La superficie habitable se multiplica por 0,09290304 para pasar de ft² a m². El indicador de precio medio por m² promedia los cocientes precio sobre superficie de cada transacción. El mapa usa el centro medio de las coordenadas de las ventas filtradas de cada código postal.
+La superficie habitable se multiplica por 0,09290304 para pasar de ft² a m². El indicador de precio medio por m² promedia los cocientes precio sobre superficie de cada transacción. Power BI y la web leen los mismos valores calculados por el ETL. El mapa usa el centro medio de las coordenadas de las ventas filtradas de cada código postal.
 
 ## Referencias para validar Power BI
 

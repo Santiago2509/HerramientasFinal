@@ -4,7 +4,7 @@ Power BI es el informe con modelo semántico y medidas DAX. La web presenta un t
 
 ## Importación y modelo
 
-1. Ejecutar `python scripts/construir.py` desde la raíz. Genera `data/processed/ventas.csv` con una fila por transacción.
+1. Usar [data/processed/ventas.csv](../data/processed/ventas.csv), que ya viene limpio en el repositorio. Si hay que regenerarlo, ejecutar `python scripts/etl.py` desde la raíz.
 2. En Power BI Desktop, elegir **Obtener datos → Texto/CSV → Transformar datos** y renombrar la consulta como `Ventas`. Usar UTF-8 y coma como delimitador. Forzar `id`, `zipcode`, `price_band`, `bedroom_group` y `bathroom_group` a **Texto**. Para las columnas que usan punto decimal, aplicar **Cambiar tipo → Usar configuración regional → Inglés (Estados Unidos)** si la detección automática falla.
 3. Asignar `sale_date` al tipo **Fecha**. Usar entero para `sale_id`, `bedrooms`, `yr_built`, `price_band_order` y `waterfront`. Usar decimal para `price`, `living_m2`, `price_per_m2`, `bathrooms`, `lat` y `long`. Después, elegir **Cerrar y aplicar**.
 4. En `Ventas`, ordenar `price_band` por `price_band_order`. Categorizar `lat` como **Latitud**, `long` como **Longitud** y `zipcode` como **Código postal**.
@@ -36,6 +36,8 @@ ADDCOLUMNS (
 
 Agregar segmentadores por código postal, rango de precio, habitaciones y frente al agua. Para el mapa, activar Azure Maps si está permitido en la cuenta. Comprobar que las coordenadas representan el contexto del código postal y que los filtros actualizan el conteo y el precio.
 
-Para importar el JSON de análisis en Power Query, usa **Obtener datos → JSON** y expande por separado las listas `anova.groups` y `model.metrics`. Los resultados describen el dataset completo, así que deja esas tablas sin relación con Ventas. Guarda el informe como `Proyecto4-KingCounty.pbix`.
+Para generar el JSON de análisis, ejecuta `python scripts/construir.py`. En Power Query, usa **Obtener datos → JSON** y expande por separado las listas `anova.groups` y `model.metrics`. Los resultados describen el dataset completo, así que deja esas tablas sin relación con Ventas. Guarda el informe como `Proyecto4-KingCounty.pbix`.
+
+Antes de entregar, quita los filtros y comprueba que el informe muestre **21.613 ventas**, **USD 540.088 de precio medio**, **USD 2.843 por m²** y **163 ventas frente al agua**. Selecciona el código postal **98039** y verifica que queden **50 ventas**.
 
 El requisito de casas y apartamentos necesita un campo de tipo de vivienda de otra fuente. Si se aprueba una unión por identificador de propiedad, usar una dimensión de propiedades con relación 1 a muchos hacia Ventas, validar los identificadores y reportar el porcentaje de ventas con tipo conocido.

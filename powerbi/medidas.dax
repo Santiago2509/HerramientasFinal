@@ -1,26 +1,32 @@
 // Power BI Desktop. Crear cada bloque como una medida de la tabla Ventas.
 
+// Una fila del CSV representa una venta. Un filtro sin resultados muestra cero.
 Ventas registradas =
-COUNTROWS ( Ventas )
+COALESCE ( COUNTROWS ( Ventas ), 0 )
 
+// Una propiedad puede aparecer en más de una transacción.
 Propiedades únicas =
 DISTINCTCOUNT ( Ventas[id] )
 
+// Promedio y mediana del precio de las ventas visibles.
 Precio medio USD =
 AVERAGE ( Ventas[price] )
 
 Precio mediano USD =
 MEDIAN ( Ventas[price] )
 
+// Promedio de los precios por m² de cada venta, calculados en el ETL.
 Precio medio por m² USD =
 AVERAGE ( Ventas[price_per_m2] )
 
+// Aplica el indicador del CSV junto con los filtros del informe.
 Ventas frente al agua =
 CALCULATE ( [Ventas registradas], KEEPFILTERS ( Ventas[waterfront] = 1 ) )
 
 Proporción frente al agua =
-DIVIDE ( COALESCE ( [Ventas frente al agua], 0 ), [Ventas registradas] )
+DIVIDE ( [Ventas frente al agua], [Ventas registradas] )
 
+// Pearson sobre las ventas visibles. Devuelve blanco si no hay variación.
 Correlación superficie y precio =
 VAR Muestra =
     FILTER ( Ventas, NOT ISBLANK ( Ventas[living_m2] ) && NOT ISBLANK ( Ventas[price] ) )
