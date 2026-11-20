@@ -45,6 +45,7 @@ def download_csv(destination):
 
 def transform(path):
     """Valida cada transacción, genera columnas de análisis y cuenta las incidencias."""
+    # Leemos los identificadores y códigos postales como texto para conservar los ceros iniciales.
     raw = pd.read_csv(path, dtype={"id": "string", "zipcode": "string", "date": "string"})
     missing = sorted(set(["id", "date", "zipcode", *FIELDS]) - set(raw.columns))
     if missing:
@@ -53,8 +54,11 @@ def transform(path):
     # Dos ventas de la misma propiedad se conservan si difieren en algún campo.
     sales = raw[["id", "date", "zipcode", *FIELDS]].drop_duplicates().copy()
     exact_duplicates = len(raw) - len(sales)
+    # Convertimos fechas y números para que los valores ilegibles queden marcados como faltantes.
     sales["sale_date"] = pd.to_datetime(sales.pop("date"), format="%Y%m%dT%H%M%S", errors="coerce")
     sales[FIELDS] = sales[FIELDS].apply(pd.to_numeric, errors="coerce")
+
+    # Comprobamos que cada venta tenga los datos necesarios para el análisis.
     valid_sales = (
         sales["id"].str.fullmatch(r"\d+", na=False)
         & sales["zipcode"].str.fullmatch(r"\d{5}", na=False)
@@ -72,20 +76,25 @@ def transform(path):
     sales = sales.loc[valid_sales].sort_values(["sale_date", "id"], kind="stable").copy()
     if sales.empty:
         raise ValueError("El CSV no contiene ventas que pasen la validación.")
+    # Damos un número a cada transacción, ya que una propiedad puede venderse varias veces.
     sales["sale_id"] = range(1, len(sales) + 1)
+
+    # Pasamos el área a m² para comparar el precio por unidad de superficie entre viviendas.
     sales["living_m2"] = (sales["sqft_living"] * SQFT_TO_M2).round(4)
     sales["price_per_m2"] = (sales["price"] / sales["living_m2"]).round(4)
-    # Marca los 12 registros de esta fuente con el año de construcción posterior a la venta.
+    # Dejamos marcada la diferencia de año para que se pueda revisar en el CSV limpio.
     sales["built_after_sale_year"] = sales["yr_built"].gt(sales["sale_date"].dt.year)
     # El límite inferior de cada rango está incluido. El superior pasa al siguiente rango.
     sales["price_band"] = pd.cut(sales["price"], BANDS, right=False, labels=BAND_LABELS)
     sales["price_band_order"] = sales["price_band"].cat.codes + 1
+    # Creamos etiquetas para que las categorías se lean fácilmente en los gráficos.
     sales["waterfront_label"] = sales["waterfront"].map({0: "Sin frente al agua", 1: "Frente al agua"})
     sales["bedroom_group"] = sales["bedrooms"].clip(upper=6).astype(int).astype(str).replace({"6": "6+"})
     sales["bathroom_group"] = sales["bathrooms"].astype(int).clip(upper=5).astype(str).replace({"5": "5+"})
     sales = sales[["sale_id", "id", "sale_date", "zipcode", *FIELDS, "living_m2", "price_per_m2",
                    "price_band", "price_band_order", "waterfront_label", "bedroom_group", "bathroom_group",
                    "built_after_sale_year"]]
+    # Resumimos cuántas filas entraron, se descartaron o quedaron marcadas para revisión.
     metadata = {
         "source": SOURCE,
         "license": "CC0: Public Domain",
