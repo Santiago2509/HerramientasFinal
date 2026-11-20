@@ -1,0 +1,46 @@
+ANOVA: precio de vivienda por zona (código postal)
+============================================================
+Ventas analizadas: 21,613
+Zonas (grupos): 70
+Variable dependiente: log(precio)   Factor: zipcode   Alfa = 0.05
+
+Hipótesis
+  H0: el precio promedio es igual en todas las zonas.
+  H1: al menos una zona tiene un precio promedio distinto.
+
+Supuesto 1 - Normalidad (Shapiro-Wilk por zona, sobre log(precio))
+  Zonas que NO pasan normalidad (p < 0.05): 66 de 70
+  Asimetría de los residuos: 0.561  (cercano a 0 = simétrico)
+
+Supuesto 2 - Homogeneidad de varianzas (Levene)
+  Estadístico = 16.378   p-valor = 4.206e-186
+  Conclusión: varianzas distintas -> se usa también ANOVA de Welch.
+
+Resultados
+  ANOVA clásico:      F(69, 21543) = 351.69   p-valor = 0.000e+00
+  ANOVA de Welch:     F = 376.53   p-valor = 0.000e+00
+  Kruskal-Wallis:     H = 12101.60   p-valor = 0.000e+00
+  (Un p-valor mostrado como 0.000e+00 significa p < 0.001: es tan pequeño que no se puede representar.)
+  Tamaño del efecto (eta²): 0.530  -> la zona explica el 53.0 % de la variación de log(precio)
+
+Conclusión
+  p-valor < 0.05 en las tres pruebas: se rechaza H0.
+  Existen diferencias significativas en el precio de la vivienda entre zonas;
+  la ubicación (código postal) influye en el precio.
+
+Las 5 zonas más caras y las 5 más baratas (precio en USD)
+         ventas   promedio    mediana
+zipcode                              
+98039        50  2160607.0  1892500.0
+98004       317  1355927.0  1150000.0
+98040       282  1194230.0   993750.0
+98112       269  1095499.0   915000.0
+98102       105   901258.0   720000.0
+...
+         ventas  promedio   mediana
+zipcode                            
+98148        57  284909.0  278000.0
+98001       362  280805.0  260000.0
+98032       125  251296.0  249000.0
+98168       269  240328.0  235000.0
+98002       199  234284.0  235000.0
