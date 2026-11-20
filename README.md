@@ -1,43 +1,40 @@
 # Proyecto 4 · Exploración del mercado inmobiliario
 
-Analizamos las ventas de viviendas de **King County, Washington**, registradas entre el 2 de mayo de 2014 y el 27 de mayo de 2015. El proyecto separa el CSV original, los datos limpios, el análisis y la página web. La web y Power BI usan las mismas ventas y los mismos cálculos del ETL.
+Analizamos las ventas de viviendas de **King County, Washington**, registradas entre el 2 de mayo de 2014 y el 27 de mayo de 2015. El proyecto separa el CSV original, los datos limpios, el análisis y la página web. El archivo limpio del ETL se usa para el análisis estadístico y para el informe de Power BI que se muestra en la página.
 
 ## Qué se hizo y hasta dónde llegamos
 
 | Parte | Estado |
 | --- | --- |
 | ETL | Terminado para el CSV asignado. Valida, ordena y transforma 21.613 ventas. El original y la salida limpia están en GitHub. |
-| Página web | Construida y publicada en privado. Incluye filtros, mapa, ranking por código postal, gráficos y los resultados estadísticos. También se puede abrir en local. |
-| ANOVA y predicción | Ejecutados en Python. Quedaron los scripts, los resultados y un comando para probar una estimación histórica. |
-| Power BI | El CSV limpio, las medidas DAX y la guía están preparados. Falta crear, probar y entregar el archivo .pbix en Power BI Desktop. |
+| Página web | [web/index5.html](web/index5.html) presenta el proceso, incrusta el informe de Power BI y explica el ANOVA por código postal. |
+| ANOVA y predicción | En Python hay un ANOVA por habitaciones, otro por código postal y una evaluación de modelos de predicción del precio histórico. |
+| Power BI | El informe publicado está incrustado en la página. La carpeta powerbi guarda la guía y las medidas DAX de referencia. Si piden el archivo editable .pbix, el equipo debe incluirlo en la entrega. |
 | Requisitos geográficos y tipos de vivienda | El CSV permite analizar códigos postales y propiedades frente al agua. Para distinguir barrios, casas de apartamentos o vista específicamente al mar, faltan campos. Consultar al profesor cómo quiere que se documenten esos casos. |
 
-[Tablero web privado](https://mercado-inmobiliario-king-county.pointysycamore3.chatgpt.site) · [Guía de Power BI](powerbi/GUIA.md) · [Resultados y metodología](docs/METODOLOGIA.md)
+[Informe en Power BI](https://app.powerbi.com/view?r=eyJrIjoiZWEyYThkOTctYWEyNi00ODIzLWE4NDMtZDYxYTgxY2EzOWUyIiwidCI6IjhkMzY4MzZlLTZiNzUtNGRlNi1iYWI5LTVmNGIxNzc1NDI3ZiIsImMiOjR9) · [Guía de Power BI](powerbi/GUIA.md) · [Resultados y metodología](docs/METODOLOGIA.md)
 
-## Dónde está cada archivo
+## Qué hay en cada carpeta
 
-| Archivo o carpeta | Para qué sirve |
+| Carpeta | Archivos y función |
 | --- | --- |
-| [data/raw/kc_house_data.csv](data/raw/kc_house_data.csv) | CSV original descargado de Kaggle. Es la entrada del ETL. |
-| [data/processed/ventas.csv](data/processed/ventas.csv) | CSV limpio con una fila por venta. Es el archivo que se importa en Power BI. |
-| [data/processed/calidad.json](data/processed/calidad.json) | Control de filas, fechas, códigos postales e incidencias. |
-| [scripts/etl.py](scripts/etl.py) | Lee el original, limpia y exporta los datos a CSV y JSON. |
-| [scripts/analisis.py](scripts/analisis.py) | Calcula ANOVA, correlación y métricas de predicción. |
-| [scripts/construir.py](scripts/construir.py) | Ejecuta el ETL y el análisis y prepara la página. |
-| [scripts/predecir.py](scripts/predecir.py) | Usa el modelo local para estimar un precio histórico. |
-| [web/index.html](web/index.html) · [web/estilos.css](web/estilos.css) · [web/app.js](web/app.js) | Estructura, diseño y filtros de la página. |
-| [web/assets/](web/assets/) | Límite geográfico de King County y biblioteca Leaflet. |
-| [powerbi/medidas.dax](powerbi/medidas.dax) | Fórmulas que se crean como medidas en Power BI. |
-| [requirements.txt](requirements.txt) · [.openai/hosting.json](.openai/hosting.json) | Dependencias de Python y configuración del sitio publicado. |
-| dist/ · artifacts/ | Salidas locales generadas. Contienen la web lista para servir y el modelo entrenado. |
+| [data/raw/](data/raw/) | [kc_house_data.csv](data/raw/kc_house_data.csv) es el archivo original de Kaggle y la entrada del ETL. |
+| [data/processed/](data/processed/) | [ventas.csv](data/processed/ventas.csv) es el CSV limpio para Power BI. [calidad.json](data/processed/calidad.json) resume fechas, filas, cobertura e incidencias. |
+| [scripts/](scripts/) | [etl.py](scripts/etl.py) limpia y exporta los datos con Python y pandas. [analisis.py](scripts/analisis.py) calcula el ANOVA por habitaciones y evalúa modelos de predicción. [predecir.py](scripts/predecir.py) estima un precio histórico. [construir.py](scripts/construir.py) ejecuta el ETL y el análisis y copia la página a dist/. |
+| [ANOVA/](ANOVA/) | [anova.py](ANOVA/anova.py) compara el logaritmo del precio entre códigos postales. [anova_resultados.txt](ANOVA/anova_resultados.txt) guarda los resultados. [anova_boxplot.png](ANOVA/anova_boxplot.png) muestra la distribución por zona y [anova_qqplot.png](ANOVA/anova_qqplot.png) ayuda a revisar la normalidad de los residuos. [ventas.csv](ANOVA/ventas.csv) es una copia del CSV limpio. |
+| [powerbi/](powerbi/) | [GUIA.md](powerbi/GUIA.md) describe la importación y el armado del informe. [medidas.dax](powerbi/medidas.dax) contiene las fórmulas de referencia. |
+| [web/](web/) | [index5.html](web/index5.html) es la página de presentación con el informe incrustado. [app.js](web/app.js), [estilos.css](web/estilos.css) y [assets/](web/assets/) contienen el código, los estilos y los recursos del tablero web anterior, incluido el mapa. |
+| [docs/](docs/) | [METODOLOGIA.md](docs/METODOLOGIA.md) explica la limpieza y el análisis. [PENDIENTES.md](docs/PENDIENTES.md) revisa los diez requisitos del proyecto. |
+
+En la raíz, este README es el manual principal. [requirements.txt](requirements.txt) lista las dependencias del flujo de Python. [.gitignore](.gitignore) y [.gitattributes](.gitattributes) configuran cómo Git maneja los archivos. Al ejecutar la construcción se generan dist/ y artifacts/ con la web, los JSON y el modelo entrenado.
 
 ## Cómo se limpian y usan los datos
 
 1. **Extraer.** El ETL lee el CSV de `data/raw/`. Se puede volver a descargar el original desde Kaggle con `python scripts/etl.py --refresh`.
 2. **Transformar.** Comprueba columnas, fechas, precios, superficies y coordenadas. Mantiene el identificador y el código postal como texto. Convierte la superficie habitable a m², calcula el precio por m² y asigna rangos de precio. El archivo original tiene **cero duplicados exactos**. Se conservan las ventas distintas de una misma propiedad y se marcan **12 registros** cuyo año de construcción figura un año después de la venta.
-3. **Cargar.** Guarda el CSV limpio y el informe de calidad en `data/processed/`. Para la web genera `dist/ventas.json` y `dist/analisis.json`. Los precios, conteos y gráficos de ventas salen del CSV asignado. El límite del condado y el mapa base aportan contexto geográfico.
+3. **Cargar.** Guarda el CSV limpio y el informe de calidad en `data/processed/`. El informe de Power BI usa el CSV limpio y la página muestra sus gráficos.
 
-## Cómo abrir la web y regenerar los datos
+## Cómo abrir la web y ejecutar el ETL
 
 En GitHub, descarga el proyecto desde **Code → Download ZIP** y descomprímelo, o clona el repositorio. Abre una terminal en la carpeta que contiene este README. Con **Python 3.11 o posterior**, crea un entorno virtual.
 
@@ -50,10 +47,17 @@ Actívalo en **PowerShell** con `.\.venv\Scripts\Activate.ps1` o en **macOS/Linu
 ~~~bash
 python -m pip install -r requirements.txt
 python scripts/construir.py
-python -m http.server 8000 --directory dist
 ~~~
 
-Abre [localhost:8000](http://localhost:8000). Para actualizar solo el CSV limpio y los datos de ventas de la web, ejecuta `python scripts/etl.py`. Para probar una predicción después de construir el proyecto, ejecuta este ejemplo.
+Para regenerar solo los datos limpios, ejecuta `python scripts/etl.py`.
+
+### Abrir la página
+
+Desde la raíz, ejecuta `python -m http.server 8000 --directory web` y abre [localhost:8000/index5.html](http://localhost:8000/index5.html). El informe incrustado requiere conexión a Internet.
+
+### Probar una predicción
+
+Después de ejecutar `python scripts/construir.py`, prueba este ejemplo.
 
 ~~~bash
 python scripts/predecir.py --m2 180 --habitaciones 3 --banos 2 --calidad 7 --estado 3 --agua 0 --construccion 1990 --postal 98103
@@ -61,16 +65,16 @@ python scripts/predecir.py --m2 180 --habitaciones 3 --banos 2 --calidad 7 --est
 
 El resultado es una estimación en USD para el mercado de 2014–2015. `calidad` usa la columna `grade` (1–13) y `estado` usa `condition` (1–5).
 
-## Qué falta y cómo terminarlo
+## Cómo presentar el proyecto
 
-| Integrante | Próximo paso | Cómo darlo por terminado |
-| --- | --- | --- |
-| 1 · Power BI | Importar el CSV limpio, crear el calendario y copiar las medidas DAX. Seguir la [guía de Power BI](powerbi/GUIA.md) para montar las páginas. | Guardar el .pbix y probar los filtros. Sin filtros deben aparecer 21.613 ventas, USD 540.088 de precio medio y USD 2.843 por m². |
-| 2 · Web | Probar los filtros, el mapa y el reinicio en móvil y escritorio. Acordar con el equipo cómo dará acceso a la web al profesor. | Comprobar que el evaluador puede abrir el enlace o ejecutar la web en local con las instrucciones de arriba. |
-| 3 · Estadística | Explicar qué compara el ANOVA, qué significa el MAE y qué se puede concluir del periodo histórico. Usar los [resultados reproducibles](docs/METODOLOGIA.md). | Redactar una conclusión breve con cifras y limitaciones. Si la rúbrica pide comparar pares de grupos, realizar esa prueba y documentarla. |
-| 4 · Entrega | Revisar con el profesor los campos que faltan y preparar el informe o la presentación según la rúbrica. | Entregar el .pbix, la página y los resultados. Incluir el alcance de los códigos postales, el frente al agua y los tipos de vivienda. |
+1. **Pregunta y datos.** «¿Cómo se relacionan la ubicación y las características de una vivienda con su precio de venta? Para responder, analizamos 21.613 ventas de King County, Washington, de 2014 a 2015».
+2. **Limpieza.** Muestra el CSV original y el limpio. Explica que programaron el ETL en Python con pandas. Usa dos ejemplos, convertir la superficie de pies cuadrados a m² y calcular el precio por m².
+3. **Power BI.** Abre el informe incrustado. Muestra la tarjeta de **USD 2.843 por m²**, el mapa o el ranking y un filtro. Explica que DAX calcula los indicadores a partir del CSV limpio.
+4. **ANOVA.** Muestra el diagrama de cajas por código postal. Explica que Welch detectó diferencias entre zonas (p < 0,001). El **53 %** corresponde a la variación del **logaritmo del precio** asociada al código postal en la muestra.
+5. **Predicción.** Muestra el gráfico de precio real frente a precio estimado en Power BI. Explica que el modelo estima un precio a partir de las características de la vivienda.
+6. **Cierre.** Resume un hallazgo, por ejemplo que en la muestra las viviendas frente al agua tienen un precio medio mayor. Aclara que los códigos postales se usan para agrupar zonas y que el CSV no distingue casas de apartamentos ni identifica vistas al mar.
 
-Usen la [lista de los diez requisitos](docs/PENDIENTES.md) para la revisión final. Si el profesor pide que Power BI aparezca dentro de la web, primero hay que publicar el informe y confirmar los permisos de inserción. El tablero actual carga directamente el JSON del ETL.
+Antes de exponer, comprueben que el informe carga y que los filtros funcionan. Si la entrega pide el archivo editable, tengan a mano el .pbix que usaron para publicar el informe. Usen la [lista de los diez requisitos](docs/PENDIENTES.md) para la revisión final.
 
 ## Fuentes
 
